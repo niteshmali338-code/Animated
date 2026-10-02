@@ -51,6 +51,7 @@
   (() => {
     const totalFrames = 240;
     const frames = [];
+    const frameLoads = [];
     const section = document.querySelector('.scroll-animation');
     const image = document.getElementById('animation-image');
     const loading = document.getElementById('animation-loading');
@@ -59,14 +60,21 @@
 
     for (let index = 1; index <= totalFrames; index += 1) {
       const frame = new Image();
-      frame.src = `../ezgif-5169b46ce7be9c6b-jpg/ezgif-frame-${String(index).padStart(3, '0')}.jpg`;
       frames.push(frame);
+      frameLoads.push(new Promise((resolve, reject) => {
+        frame.onload = resolve;
+        frame.onerror = () => reject(new Error(`Failed to load animation frame ${index}.`));
+        frame.src = `../ezgif-5169b46ce7be9c6b-jpg/ezgif-frame-${String(index).padStart(3, '0')}.jpg`;
+      }));
     }
 
-    Promise.all(frames.map((frame) => new Promise((resolve) => {
-      frame.onload = resolve;
-      frame.onerror = resolve;
-    }))).then(() => { loading.style.display = 'none'; });
+    Promise.all(frameLoads)
+      .then(() => { loading.style.display = 'none'; })
+      .catch((error) => {
+        loading.textContent = 'The animation could not be loaded. Please refresh the page.';
+        loading.setAttribute('role', 'alert');
+        console.error(error);
+      });
 
     const updateFrame = () => {
       ticking = false;
